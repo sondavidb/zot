@@ -1,10 +1,10 @@
 on:
   push:
     branches:
-      - main
+      - main, v2.0.3
   pull_request:
     branches:
-      - main
+      - main, v2.0.3
   release:
     types:
       - published
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [linux, darwin, freebsd]
+        os: [linux]
         arch: [amd64, arm64]
     steps:
       - name: Check out source code
@@ -76,6 +76,10 @@ jobs:
         run: |
           echo "Building for $OS:$ARCH"
           cd $GITHUB_WORKSPACE
+
+          go install github.com/google/go-licenses@latest
+          go-licenses report ./... > LICENSE_DEPENDENCIES
+
           make binary binary-minimal binary-debug cli bench exporter-minimal
         env:
           OS: ${{ matrix.os }}
