@@ -1,10 +1,10 @@
 on:
   push:
     branches:
-      - main
+      - main, release/**
   pull_request:
     branches:
-      - main
+      - main, release/**
   release:
     types:
       - published
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [linux, darwin, freebsd]
+        os: [linux]
         arch: [amd64, arm64]
     steps:
       - name: Check out source code
@@ -76,7 +76,7 @@ jobs:
         run: |
           echo "Building for $OS:$ARCH"
           cd $GITHUB_WORKSPACE
-          make binary binary-minimal binary-debug cli bench exporter-minimal
+          make binary
         env:
           OS: ${{ matrix.os }}
           ARCH: ${{ matrix.arch }}
