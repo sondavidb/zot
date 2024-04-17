@@ -1,10 +1,12 @@
 on:
   push:
     branches:
-      - main
+      - main, release/**
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
   pull_request:
     branches:
-      - main
+      - main, release/**
   release:
     types:
       - published
@@ -21,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [linux, darwin, freebsd]
+        os: [linux]
         arch: [amd64, arm64]
     steps:
       - name: Check out source code
@@ -76,7 +78,7 @@ jobs:
         run: |
           echo "Building for $OS:$ARCH"
           cd $GITHUB_WORKSPACE
-          make binary binary-minimal binary-debug cli bench exporter-minimal
+          make binary
         env:
           OS: ${{ matrix.os }}
           ARCH: ${{ matrix.arch }}
@@ -89,8 +91,8 @@ jobs:
           curl -X POST -H "Content-Type: application/json" -d @.pkg/debug/githubWorkflows/introspection-query.json http://localhost:5000/v2/_zot/ext/search | jq > bin/zot-gql-introspection-result.json
           pkill zot
 
-      - if: github.event_name == 'release' && github.event.action == 'published'
-        name: Publish artifacts on releases
+      - name: Publish artifacts on releases
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -98,6 +100,17 @@ jobs:
           tag: ${{ github.ref }}
           overwrite: true
           file_glob: true
+
+      - name: Upload to draft release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          prerelease: false
+          generate_release_notes: false
+          files: |
+            bin/z*
+            THIRD_PARTY_LICENSES
 
   release-checksums:
     name: Release Artifact Checksums
